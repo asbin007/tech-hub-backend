@@ -8,5 +8,8 @@ export const envConfig={
     jwtExpiration:process.env.JWT_EXPIRATION ,
     email: process.env.EMAIL,
     password: process.env.EMAIL_PASSWORD,
+    admin_username: process.env.ADMIN_USERNAME,
+    admin_email: process.env.ADMIN_EMAIL,
+    admin_password: process.env.ADMIN_EMAIL_PASSWORD,
 
 }

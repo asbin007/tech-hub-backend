@@ -14,7 +14,7 @@ sequelize
     console.error("Unable to connect to the database:", error);
   });
 
-sequelize.sync({ force: false, alter: true}).then(() => {
+sequelize.sync({ force: false, alter: false}).then(() => {
   console.log("Database synchronized successfully");
 });
 

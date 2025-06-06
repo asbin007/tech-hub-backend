@@ -1,6 +1,7 @@
 import express from 'express';
 import './database/connection'
 import userRoute from './routes/userRoutes'
+import categoryRoute from './routes/categoryRoute'
 import cors from 'cors'
 
 const app=express()
@@ -13,6 +14,7 @@ app.use(cors({
 
 
 app.use('/api/auth',userRoute)
+app.use('/api/category',categoryRoute)
 
 
 
