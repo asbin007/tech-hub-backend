@@ -1,11 +1,11 @@
 
 import express,{Router} from 'express';
-import { storage,multer } from '../services/multer';
+
 import errorHandler from '../services/errorHandler';
 import userController from '../controller/userController';
 import middleware, { Role } from '../services/middleware';
 import productController from '../controller/productController';
-const upload=multer({storage:storage})
+import { upload } from '../services/multer';
 const router:Router= express.Router();
 
 

@@ -81,17 +81,31 @@ class Product extends Model {
     defaultValue: 0,
   })
   declare discount: number;
+
+
+  @Column({
+    type: DataType.STRING,
+  })
+  declare RAM: string;
+  @Column({
+    type: DataType.STRING,
+  })
+  declare ROM: string;
   @Column({
     type: DataType.ARRAY(DataType.STRING),
     defaultValue: [],
   })
   declare specs: string[];
 
+  
+
   @ForeignKey(() => Category)
   @Column({
     type: DataType.STRING,
   })
   declare categoryId: string;
+
+
 }
 
 export default Product;

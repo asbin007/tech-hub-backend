@@ -11,5 +11,9 @@ export const envConfig={
     admin_username: process.env.ADMIN_USERNAME,
     admin_email: process.env.ADMIN_EMAIL,
     admin_password: process.env.ADMIN_EMAIL_PASSWORD,
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    cloud_api_key: process.env.CLOUDINARY_API_KEY,
+    cloud_api_secret: process.env.CLOUDINARY_API_SECRET,
+    
 
 }
