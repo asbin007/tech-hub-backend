@@ -16,6 +16,8 @@ class ProductController {
         specs,
         discount,
         badge,
+        RAM,
+        ROM,
       } = req.body;
 
       if (!name || !brand || !price || !originalPrice || !categoryId) {
@@ -49,11 +51,26 @@ class ProductController {
             : Array.isArray(specs)
             ? specs
             : [],
+
         inStock: inStock === "true" || inStock === true,
         isNew: isNew === "true" || isNew === true,
         categoryId,
         discount: discount ?? 0,
         badge: badge || "",
+
+        RAM:
+          typeof RAM === "string"
+            ? RAM.split(",")
+            : Array.isArray(RAM)
+            ? RAM
+            : [],
+
+        ROM:
+          typeof ROM === "string"
+            ? ROM.split(",")
+            : Array.isArray(ROM)
+            ? ROM
+            : [],
       });
 
       res.status(200).json({
@@ -93,7 +110,7 @@ class ProductController {
   async updateProduct(req: Request, res: Response): Promise<void> {
     const { id } = req.params;
     const {
-      name, 
+      name,
       brand,
       price,
       originalPrice,
@@ -105,6 +122,8 @@ class ProductController {
       specs,
       discount,
       badge,
+      RAM,
+      ROM
     } = req.body;
 
     if (!name || !brand || !price || !originalPrice || !categoryId) {
@@ -141,6 +160,19 @@ class ProductController {
           : Array.isArray(specs)
           ? specs
           : [],
+            RAM:
+          typeof RAM === "string"
+            ? RAM.split(",")
+            : Array.isArray(RAM)
+            ? RAM
+            : [],
+             ROM:
+          typeof ROM === "string"
+            ? ROM.split(",")
+            : Array.isArray(ROM)
+            ? ROM
+            : [],
+            
       inStock: inStock === "true" || inStock === true,
       isNew: isNew === "true" || isNew === true,
       categoryId,

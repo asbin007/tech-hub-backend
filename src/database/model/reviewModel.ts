@@ -39,11 +39,11 @@ class Review extends Model {
 
   declare comment: string;
 
-  @ForeignKey(() => Product)
-  @Column({
-    type: DataType.STRING,
-  })
-  declare productId: string;
+  // @ForeignKey(() => Product)
+  // @Column({
+  //   type: DataType.STRING,
+  // })
+  // declare productId: string;
   
 }
 

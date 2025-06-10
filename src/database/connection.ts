@@ -1,10 +1,13 @@
-import { Sequelize } from "sequelize-typescript";
+import {  Sequelize } from "sequelize-typescript";
 import { envConfig } from "../config/config";
 import Product from "./model/productModel";
 import Category from "./model/categoryModel";
 import Review from "./model/reviewModel";
 import User from "./model/userModel";
 import Cart from "./model/cartModel";
+import Order from "./model/orderModel";
+import Payment from "./model/paymentMode";
+import OrderDetails from "./model/orderDetaills";
 
 const sequelize = new Sequelize(envConfig.dbUrl as string, {
   models: [__dirname + "/model"],
@@ -36,12 +39,31 @@ Review.belongsTo(User,{foreignKey:'userId'})
 User.hasMany(Review, { foreignKey: 'userId' })
 
 // cart x User
-Cart.belongsTo(User,{foreignKey:'productId'})
+Cart.belongsTo(User,{foreignKey:'userId'})
 User.hasMany(Cart, { foreignKey: 'userId' })
 
 // cart x Product
 Cart.belongsTo(Product,{foreignKey:'productId'})
 Product.hasMany(Cart, { foreignKey: 'productId' })
+
+// order x user
+Order.belongsTo(User,{foreignKey:'userId'})
+User.hasMany(Order,{foreignKey:"userId"})
+
+// payment X order
+Order.belongsTo(Payment,{foreignKey:"paymentId"});
+Payment.hasOne(Order,{foreignKey:"paymentId"})
+
+
+// order x orderDetails
+OrderDetails.belongsTo(Order, { foreignKey: "orderId" });
+Order.hasOne(OrderDetails, { foreignKey: "orderId" });
+
+// orderDetails x product
+OrderDetails.belongsTo(Product, { foreignKey: "productId" });
+Product.hasMany(OrderDetails, { foreignKey: "productId" });
+
+
 
 
 export default sequelize;

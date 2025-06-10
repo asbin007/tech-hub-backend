@@ -45,7 +45,6 @@ class Product extends Model {
     allowNull: false,
   })
   declare image: string;
-  
 
   @Column({
     type: DataType.BOOLEAN,
@@ -82,30 +81,27 @@ class Product extends Model {
   })
   declare discount: number;
 
-
   @Column({
-    type: DataType.STRING,
+    type: DataType.ARRAY(DataType.STRING),
+    defaultValue: [],
   })
-  declare RAM: string;
+  declare RAM: string[];
   @Column({
-    type: DataType.STRING,
+    type: DataType.ARRAY(DataType.STRING),
+    defaultValue: [],
   })
-  declare ROM: string;
+  declare ROM: string[];
   @Column({
     type: DataType.ARRAY(DataType.STRING),
     defaultValue: [],
   })
   declare specs: string[];
 
-  
-
-  @ForeignKey(() => Category)
-  @Column({
-    type: DataType.STRING,
-  })
-  declare categoryId: string;
-
-
+  // @ForeignKey(() => Category)
+  // @Column({
+  //   type: DataType.STRING,
+  // })
+  // declare categoryId: string;
 }
 
 export default Product;
