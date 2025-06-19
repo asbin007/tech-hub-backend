@@ -35,53 +35,9 @@ class CartController {
       return res.status(400).json({ message: "Product is out of stock" });
     }
 
-    // Validate size
-    if (
-      !product.sizes ||
-      !Array.isArray(product.sizes) ||
-      !product.sizes.includes(size)
-    ) {
-      return res.status(400).json({
-        message: "Invalid size selected",
-        availableSizes: product.sizes || [],
-      });
-    }
+   
 
-    // Validate color
-    if (
-      !product.colors ||
-      !Array.isArray(product.colors) ||
-      !product.colors.includes(color)
-    ) {
-      return res.status(400).json({
-        message: "Invalid color selected",
-        availableColors: product.colors || [],
-      });
-    }
-
-    // Validate RAM
-    if (
-      !product.RAM ||
-      !Array.isArray(product.RAM) ||
-      !product.RAM.includes(RAM)
-    ) {
-      return res.status(400).json({
-        message: "Invalid RAM selected",
-        availableRAM: product.RAM || [],
-      });
-    }
-
-    // Validate ROM
-    if (
-      !product.ROM ||
-      !Array.isArray(product.ROM) ||
-      !product.ROM.includes(ROM)
-    ) {
-      return res.status(400).json({
-        message: "Invalid ROM selected",
-        availableROM: product.ROM || [],
-      });
-    }
+   
 
     // Check if cart item already exists
     let userKoCartExist = await Cart.findOne({
@@ -101,10 +57,8 @@ class CartController {
       userId,
       productId,
       quantity,
-      size,
-      color,
-      RAM,
-      ROM,
+     
+     
     });
 
     return res.status(200).json({ message: "Product added to cart", cart });

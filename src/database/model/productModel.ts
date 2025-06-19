@@ -40,11 +40,18 @@ class Product extends Model {
     allowNull: false,
   })
   declare originalPrice: number;
+ @Column({
+  type: DataType.ARRAY(DataType.STRING),
+  defaultValue: [],
+})
+declare image: string[];
+
+
   @Column({
-    type: DataType.STRING,
-    allowNull: false,
+    type:DataType.INTEGER,
+    // allowNull:false
   })
-  declare image: string;
+  declare totalStock:number
 
   @Column({
     type: DataType.BOOLEAN,
@@ -58,22 +65,7 @@ class Product extends Model {
   })
   declare isNew: boolean;
 
-  @Column({
-    type: DataType.ARRAY(DataType.STRING),
-    defaultValue: [],
-  })
-  declare sizes: string[];
 
-  @Column({
-    type: DataType.ARRAY(DataType.STRING),
-    defaultValue: [],
-  })
-  declare colors: string[];
-
-  @Column({
-    type: DataType.STRING,
-    allowNull: false,
-  })
   declare badge: string;
   @Column({
     type: DataType.INTEGER,
@@ -85,19 +77,49 @@ class Product extends Model {
     type: DataType.ARRAY(DataType.STRING),
     defaultValue: [],
   })
+  declare keyFeatures: string[];
+
+  
+  @Column({
+    type: DataType.ARRAY(DataType.STRING),
+    defaultValue: [],
+  })
+  declare spec: string[];
+
+  
+  @Column({
+    type: DataType.ARRAY(DataType.STRING),
+    defaultValue: [],
+  })
+  declare color: string[];
+  
+  @Column({
+    type: DataType.ARRAY(DataType.STRING),
+    defaultValue: [],
+  })
   declare RAM: string[];
+
   @Column({
     type: DataType.ARRAY(DataType.STRING),
     defaultValue: [],
   })
   declare ROM: string[];
+
   @Column({
     type: DataType.ARRAY(DataType.STRING),
     defaultValue: [],
   })
-  declare specs: string[];
+  declare description: string[];
+  
+  @Column({
+    type: DataType.ARRAY(DataType.STRING),
+    defaultValue: [],
+  })
+  declare size: string[];
 
-  // @ForeignKey(() => Category)
+
+
+  // @ForeignKey(() => Category)p
   // @Column({
   //   type: DataType.STRING,
   // })

@@ -28,8 +28,8 @@ sequelize.sync({ force: false, alter: true}).then(() => {
 
 // product x category
 
-Product.belongsTo(Category,{foreignKey:'categoryId', as: 'category'});
-Category.hasMany(Product, { foreignKey: 'categoryId', as: 'products' });
+Product.belongsTo(Category,{foreignKey:'categoryId' });
+Category.hasMany(Product, { foreignKey: 'categoryId' });
 
 // product x review
 Review.belongsTo(Product,{foreignKey:'productId'})
