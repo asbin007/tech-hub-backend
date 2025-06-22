@@ -52,6 +52,10 @@ class Cart extends Model {
   })
   declare ROM: string;
 
+  
+
+  
+
 }
 
 export default Cart;
