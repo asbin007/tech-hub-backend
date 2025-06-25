@@ -7,9 +7,10 @@ const router: Router = express.Router();
 
 // POST review and GET reviews by product ID
 router
-  .route('/:id')
+  .route('/')
   .post(middleware.isUserLoggedIn, errorHandler(reviewController.postReview))
-  .get(errorHandler(reviewController.getReviewByProductId));
+
+  router.route('/:productId').get(errorHandler(reviewController.getReviewByProductId))
 
 // GET all reviews
 router.route('/').get(errorHandler(reviewController.getAllReviews));

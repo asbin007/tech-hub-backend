@@ -10,6 +10,5 @@ const router:Router= express.Router();
 
 
 router.route('/').post(upload.array('image',5),middleware.isUserLoggedIn,errorHandler(productController.postProduct)).get(errorHandler(productController.getProducts))
-router.route('/:id').delete(middleware.isUserLoggedIn,middleware.accessTo(Role.Admin),errorHandler(productController.deleteProduct)).patch(upload.single('image'),middleware.isUserLoggedIn,middleware.accessTo(Role.Admin),errorHandler(productController.updateProduct)).get(errorHandler(productController.updateProduct))
-router.route('/:id').get(errorHandler(productController.getProductById));
+router.route('/:id').delete(middleware.isUserLoggedIn,middleware.accessTo(Role.Admin),errorHandler(productController.deleteProduct)).patch(upload.array('image',5),middleware.isUserLoggedIn,middleware.accessTo(Role.Admin),errorHandler(productController.updateProduct)).get(errorHandler(productController.getProductById))
 export default router;

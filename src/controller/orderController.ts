@@ -1,26 +1,29 @@
-import { Request, response, Response } from "express";
+import { Request, Response } from "express";
 import Payment from "../database/model/paymentMode";
 import Order from "../database/model/orderModel";
 import OrderDetails from "../database/model/orderDetaills";
 import Cart from "../database/model/cartModel";
-import { OrderStatus, PaymentMethod, PaymentStatus } from "../services/types";
-import axios from "axios";
 import Product from "../database/model/productModel";
 import Category from "../database/model/categoryModel";
+import { OrderStatus, PaymentMethod, PaymentStatus } from "../services/types";
+import axios from "axios";
 
 interface IAuth extends Request {
   user?: {
     id: string;
   };
 }
+
 interface IProduct {
   productId: string;
   productQty: number;
 }
-class OrderWithPaymentId extends Order{
-  declare paymentId: string;
+
+class OrderWithPaymentId extends Order {
+  declare paymentId: string | null;
 }
-class OderController {
+
+class OrderController {
   async postOrder(req: IAuth, res: Response): Promise<void> {
     const userId = req.user?.id;
     const {
@@ -37,7 +40,9 @@ class OderController {
       street,
     } = req.body;
     const products: IProduct[] = req.body.products;
+    console.log(req.body);
 
+    // Validate inputs
     if (
       !phoneNumber ||
       !firstName ||
@@ -49,21 +54,25 @@ class OderController {
       !zipcode ||
       !totalPrice ||
       !paymentMethod ||
-      !street
+      !street ||
+      products.length === 0
     ) {
       res.status(400).json({
-        message: "Please fill up all required fields",
+        message:
+          "Please fill up all required fields and add at least one product",
       });
       return;
     }
 
-    // for payment
+    // for order
     let data;
     const paymentData = await Payment.create({
       paymentMethod: paymentMethod,
     });
+
+    // Create order
     const orderData = await Order.create({
-      userId: userId,
+      userId,
       phoneNumber,
       firstName,
       lastName,
@@ -71,27 +80,30 @@ class OderController {
       city,
       addressLine,
       state,
-      street,
       zipcode,
+      street,
       totalPrice,
       paymentId: paymentData.id,
     });
 
-    // for orderDetaills
-    products.forEach(async function (items) {
+    // Create order details and remove from cart
+    // for orderDetails
+    products.forEach(async function (product) {
       data = await OrderDetails.create({
-        quantity: items.productQty,
-        productId: items.productId,
+        quantity: product.productQty,
+        productId: product.productId,
         orderId: orderData.id,
       });
+
       await Cart.destroy({
         where: {
-          productId: items.productId,
+          productId: product.productId,
           userId: userId,
         },
       });
     });
-    // for payment
+
+    // Handle Khalti
     if (paymentMethod === PaymentMethod.Khalti) {
       const data = {
         return_url: "http://localhost:5173/",
@@ -100,6 +112,7 @@ class OderController {
         purchase_order_id: orderData.id,
         purchase_order_name: "order_" + orderData.id,
       };
+
       const response = await axios.post(
         "https://dev.khalti.com/api/v2/epayment/initiate/",
         data,
@@ -111,17 +124,32 @@ class OderController {
       );
 
       const khaltiResponse = response.data;
-
       paymentData.pidx = khaltiResponse.pidx;
       await paymentData.save();
-      res.status(201).json({
-        message: "order created successfully",
-        data,
+      // 🚨 Assuming success here (risky)
+      await Payment.update(
+        { pidx: khaltiResponse.pidx, paymentStatus: PaymentStatus.Paid },
+        { where: { id: paymentData.id } }
+      );
+
+      await Order.update(
+        { orderStatus: OrderStatus.Preparation },
+        { where: { id: orderData.id } }
+      );
+
+      res.status(200).json({
+        message: "Order created successfully",
+
         url: khaltiResponse.payment_url,
         pidx: khaltiResponse.pidx,
+        data,
       });
+      return;
     } else if (paymentMethod == PaymentMethod.Esewa) {
-      // TODO: Implement Esewa payment flow
+      res.status(200).json({
+        message: "Order created successfully",
+        data,
+      });
     } else {
       res.status(200).json({
         message: "Order created successfully",
@@ -129,78 +157,75 @@ class OderController {
       });
     }
   }
+
   async verifyTransaction(req: IAuth, res: Response): Promise<void> {
     const { pidx } = req.body;
     if (!pidx) {
-      res.status(400).json({
-        message: "Please provide pidx",
-      });
+      res.status(400).json({ message: "Please provide pidx" });
       return;
     }
+
     const response = await axios.post(
       "https://a.khalti.com/api/v2/epayment/lookup/",
-      {
-        pidx: pidx,
-      },
+      { pidx },
       {
         headers: {
-          Authorization: "Key b71142e3f4fd4da8acccd01c8975be38",
+          Authorization: "Key 5d818e0244bd414f99ad73e584d04e11",
         },
       }
     );
+
     const data = response.data;
+
     if (data.status === "Completed") {
       await Payment.update(
         { paymentStatus: PaymentStatus.Paid },
-        {
-          where: {
-            pidx: pidx,
-          },
-        }
+        { where: { pidx } }
       );
-      res.status(200).json({
-        message: "Payment verified successfully !!",
-      });
+      res.status(200).json({ message: "Payment verified successfully" });
     } else {
-      res.status(200).json({
-        message: "Payment not verified or cancelled",
-      });
+      res.status(200).json({ message: "Payment not verified or cancelled" });
     }
   }
+
   async fetchMyOrder(req: IAuth, res: Response): Promise<void> {
-    const userId = req.user?.id;
-    const { pidx } = req.body;
-    const orders = await Order.findAll({
-      where: {
-        userId,
-      },
-      attributes: ["totalPrice", "id", "orderStatus"],
-      include: {
-        model: Payment,
-        attributes: ["id", "paymentMethod", "paymentStatus"],
-      },
-    });
-    console.log(orders, "order");
-    if (orders.length > 0) {
-      res.status(201).json({
-        message: "Order fetched successfully",
-        data: orders,
-        pidx: pidx,
+    try {
+      const userId = req.user?.id;
+      const orders = await Order.findAll({
+        where: { userId },
+        attributes: ["totalPrice", "id", "orderStatus", "createdAt"],
+        include: [
+          {
+            model: Payment,
+            attributes: ["id", "paymentMethod", "paymentStatus"],
+          },
+
+          {
+            model: OrderDetails,
+            attributes: ["quantity"],
+          },
+        ],
       });
-    } else {
-      res.status(404).json({
-        message: "No order found",
-        data: [],
-      });
+
+      if (orders.length > 0) {
+        res.status(200).json({
+          message: "Order fetched successfully",
+          data: orders,
+        });
+      } else {
+        res.status(404).json({ message: "No order found", data: [] });
+      }
+    } catch (error) {
+      console.error("Fetch My Orders Error:", error);
+      res.status(500).json({ message: "Internal Server Error" });
     }
   }
-  async fetchMyOrderDetail(req: IAuth, res: Response): Promise<void> {
+
+  async fetchMyOrderDetail(req: IAuth, res: Response): Promise<void> {  
     const orderId = req.params.id;
-    const userId = req.user?.id;
+
     const orders = await OrderDetails.findAll({
-      where: {
-        orderId,
-      },
+      where: { orderId },
       include: [
         {
           model: Order,
@@ -224,25 +249,19 @@ class OderController {
         },
         {
           model: Product,
-          include: [
-            {
-              model: Category,
-            },
-          ],
-          attributes: ["images", "name", "price"],
+          include: [{ model: Category }],
+          attributes: ["image", "name", "price"],
         },
       ],
     });
+
     if (orders.length > 0) {
       res.status(200).json({
         message: "Order details fetched successfully",
         data: orders,
       });
     } else {
-      res.status(404).json({
-        message: "No order found",
-        data: [],
-      });
+      res.status(404).json({ message: "No order found", data: [] });
     }
   }
 
@@ -251,120 +270,104 @@ class OderController {
       attributes: ["totalPrice", "id", "orderStatus", "createdAt", "paymentId"],
       include: [
         {
-          model: OrderDetails,
-          attributes: ["quantity"],
-        },
-
-        {
           model: Payment,
-          attributes: ["paymentMethod", "paymentStatus"],
+          attributes: ["paymentMethod", "paymentStatus", "id"],
+        },
+        {
+          model: OrderDetails,
+          attributes: ["quantity", "id"],
+          required: false,
         },
       ],
     });
-    if (orders.length > 0) {
-      res.status(201).json({
-        message: "Order fetched successfully",
-        data: orders,
-      });
-    } else {
-      res.status(404).json({
-        message: "No order found",
-        data: [],
-      });
-    }
-  }
-  async cancelOrder(req: IAuth, res: Response): Promise<void> {
-    const userId = req.user?.id;
-    const orderId = req.params.id;
-    const [order] = await Order.findAll({
-      where: {
-        userId,
-        id: orderId,
-      },
-    });
-    if (!order) {
-      res.status(400).json({
-        message: "No order with that id",
-      });
-      return;
-    }
-    //check other status
 
-    if (
-      order.orderStatus === OrderStatus.Ontheway ||
-      order.orderStatus === OrderStatus.Preparation
-    ) {
-      res.status(403).json({
-        message:
-          "You cannot cancelled order, it is on the way or preparation mode",
-      });
-      return;
-    }
-    await Order.update(
-      { orderStatus: OrderStatus.Cancelled },
-      {
-        where: {
-          id: orderId,
-        },
-      }
-    );
-    res.status(201).json({
-      message: "Order cancelled successfully",
+    res.status(orders.length > 0 ? 200 : 404).json({
+      message:
+        orders.length > 0 ? "Order fetched successfully" : "No order found",
+      data: orders,
     });
+  }
+
+  async cancelOrder(req: IAuth, res: Response): Promise<void> {
+    try {
+      const userId = req.user?.id;
+      const orderId = req.params.id;
+
+      const [order] = await Order.findAll({
+        where: { userId, id: orderId },
+      });
+
+      if (!order) {
+        res.status(404).json({ message: "No order with that ID" });
+        return;
+      }
+
+      if (
+        order.orderStatus === OrderStatus.Ontheway ||
+        order.orderStatus === OrderStatus.Preparation
+      ) {
+        res.status(403).json({
+          message:
+            "You cannot cancel an order that's in preparation or on the way",
+        });
+        return;
+      }
+
+      await Order.update(
+        { orderStatus: OrderStatus.Cancelled },
+        { where: { id: orderId } }
+      );
+
+      res.status(200).json({ message: "Order cancelled successfully" });
+    } catch (error) {
+      console.error("Cancel Order Error:", error);
+      res.status(500).json({ message: "Error cancelling order" });
+    }
   }
 
   async changeOrderStatus(req: IAuth, res: Response): Promise<void> {
-    const orderId = req.params.id;
-    const { orderStatus } = req.body;
-    if (!orderId || !orderStatus) {
-      res.status(400).json({
-        message: "Please provide orderId and orderStatus",
-      });
-    }
-    await Order.update(
-      { orderStatus: OrderStatus },
-      {
-        where: {
-          id: orderId,
-        },
+    try {
+      const orderId = req.params.id;
+      const { orderStatus } = req.body;
+
+      if (!orderId || !orderStatus) {
+        res
+          .status(400)
+          .json({ message: "Please provide orderId and orderStatus" });
+        return;
       }
-    );
-    res.status(201).json({
-      message: "Order status updated successfully",
-    });
+
+      await Order.update({ orderStatus }, { where: { id: orderId } });
+
+      res.status(200).json({ message: "Order status updated successfully" });
+    } catch (error) {
+      console.error("Change Order Status Error:", error);
+      res.status(500).json({ message: "Error updating order status" });
+    }
   }
 
   async deleteOrder(req: IAuth, res: Response): Promise<void> {
-    const orderId = req.params.id;
-    const order: OrderWithPaymentId = (await Order.findByPk(
-      orderId
-    )) as OrderWithPaymentId;
-    const paymentId = order?.paymentId;
-    if (!order) {
-      res.status(404).json({
-        message: "You dont have that orderId order",
-      });
-      return;
+    try {
+      const orderId = req.params.id;
+      const order: OrderWithPaymentId = (await Order.findByPk(
+        orderId
+      )) as OrderWithPaymentId;
+
+      if (!order) {
+        res.status(404).json({ message: "Order not found" });
+        return;
+      }
+
+      await OrderDetails.destroy({ where: { orderId } });
+      await Payment.destroy({ where: { id: order.paymentId } });
+      await Order.destroy({ where: { id: orderId } });
+
+      res.status(200).json({ message: "Order deleted successfully" });
+    } catch (error) {
+      console.error("Delete Order Error:", error);
+      res.status(500).json({ message: "Error deleting order" });
     }
-    await OrderDetails.destroy({
-      where: {
-        orderId: orderId,
-      },
-    });
-    await Payment.destroy({
-      where: {
-        id: paymentId,
-      },
-    });
-    await Order.destroy({
-      where: {
-        id: orderId,
-      },
-    });
-    res.status(201).json({
-      message: "Order delete successfully",
-    });
   }
 }
 
-export default new OderController();
+export default new OrderController();

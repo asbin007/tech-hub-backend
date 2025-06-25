@@ -10,7 +10,7 @@ router.route("/").post(middleware.isUserLoggedIn, errorHandler(orderController.p
 router.route("/all").get( errorHandler(orderController.fetchAllOrders))
 
 router.route("/verify-pidx").post(middleware.isUserLoggedIn,errorHandler(orderController.verifyTransaction))
-router.route('/:id').get(errorHandler(orderController.fetchMyOrderDetail  ))
+router.route('/:id').get(middleware.isUserLoggedIn, errorHandler(orderController.fetchMyOrderDetail  ))
 router.route("/admin/change-status/:id").patch(middleware.isUserLoggedIn,middleware.accessTo(Role.Admin), errorHandler(orderController.changeOrderStatus))
 router.route("/admin/delete-order/:id").post(middleware.isUserLoggedIn,middleware.accessTo(Role.Admin), errorHandler(orderController.deleteOrder))
 router.route("/cancel-order/:id").patch(middleware.isUserLoggedIn,middleware.accessTo(Role.Customer), errorHandler(orderController.cancelOrder))
